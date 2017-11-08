@@ -6,15 +6,11 @@ DB_PATH='./mping.db'
 RTTLIST=[]
 
 def mping(host,rttlist=[]):
-	cmd="ping -c 1 " + host
+	cmd="fping -c 1 -q " + host
 	p=os.popen(cmd)
-	for line in p:
-		#return the latency of ping result
-		if line.startswith('rtt'):
-			rtt=line.split('/')[-2]
-			rttlist.append((host.strip(),rtt))	
-		elif :
-			rttlist.append((host.strip(),'time out'))
+	rtt=p.split('/')[-1]
+	rttlist.append((host.strip(),rtt))	
+
 
 def load_thread(hostlist,rttlist):
 	for host in hostlist:
