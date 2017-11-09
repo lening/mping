@@ -1,10 +1,20 @@
-import os,threading,sqlite3,subprocess
+import os,subprocess,threading,sqlite3
+from multiprocessing import Pool
 from time import sleep
 
-cmd="fping -c 1 -q 172.20.1.10"
-p=subprocess.Popen(cmd,shell=True,stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-p.wait()
-print p.returncode
-print p.stderr.read()
-# rtt=p.split('/')[-1]
-# rttlist.append((host.strip(),rtt))	
+def pf(i):
+	print('test%d'%(i))
+
+def load_proc():
+	p=Pool(4)
+	for i in range(19):
+		p.apply_async(pf, args=(i,))
+	p.close()
+	p.join()
+
+def main():
+	load_proc()
+
+if __name__ == '__main__':
+	main()
+	

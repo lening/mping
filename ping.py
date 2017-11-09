@@ -1,27 +1,28 @@
-import os,threading,sqlite3
+import os,subprocess,threading,sqlite3
+from multiprocessing import Pool
 from time import sleep
 
 HOSTLIST_PATH='./hostlist'
 DB_PATH='./mping.db'
 RTTLIST=[]
 
-def mping(host,rttlist=[]):
-	cmd="ping -c 1 " + host
-	p=os.popen(cmd)
-	for line in p:
-		#return the latency of ping result
-		if line.startswith('rtt'):
-			rtt=line.split('/')[-2]
-			rttlist.append((host.strip(),rtt))	
-		elif :
-			rttlist.append((host.strip(),'time out'))
-
-def load_thread(hostlist,rttlist):
+def mping(host):
+	cmd="fping -c 1 -q " +host
+	p=subprocess.Popen(cmd,shell=True,stderr=subprocess.PIPE)
+	p.wait()
+	if p.returncode == 0:
+		rtt=p.stderr.read().strip().split('/')[-1]
+		return rtt
+	else:
+		return 1
+		
+#load_proc需要处理mping返回值
+def load_proc(hostlist,rttlist):
+	p=Pool(100)
 	for host in hostlist:
-		t=threading.Thread(target=mping,args=(host, rttlist,))
-		t.start()
-		t.join()
-	return rttlist
+		p.apply_async(mping, args=(host,rttlist))
+	p.close()
+	p.join()
 
 def write_data(rttlist):
 	conn=sqlite3.connect(DB_PATH)
@@ -34,10 +35,9 @@ def write_data(rttlist):
 
 def main():
 	with open(HOSTLIST_PATH,'r') as hostlist:
-		while(1):
-			rttlist=load_thread(hostlist, RTTLIST)
-			write_data(rttlist)
-			sleep(10)
+		load_proc(hostlist,RTTLIST)
+		print(RTTLIST)
+		# write_data(rttlist)
 
 if __name__ == '__main__':
 	main()
