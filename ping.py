@@ -1,28 +1,29 @@
-import os,subprocess,threading,sqlite3
+import os,subprocess,threading,sqlite3,time
 from multiprocessing import Pool
-from time import sleep
 
 HOSTLIST_PATH='./hostlist'
 DB_PATH='./mping.db'
-RTTLIST=[]
 
 def mping(host):
-	cmd="fping -c 1 -q " +host
-	p=subprocess.Popen(cmd,shell=True,stderr=subprocess.PIPE)
-	p.wait()
-	if p.returncode == 0:
-		rtt=p.stderr.read().strip().split('/')[-1]
-		return rtt
+	cmd=("ping -c 3 -i 0.1 -q " +host).split(" ")
+	p=subprocess.Popen(cmd,stdout=subprocess.PIPE,stderr=subprocess.PIPE)
+	time.sleep(2)
+	if p.poll() == 0:
+		rtt=p.stdout.readlines()[-1].strip().split('/')[-3]
+		return(host,rtt)
 	else:
-		return 1
-		
-#load_proc需要处理mping返回值
-def load_proc(hostlist,rttlist):
-	p=Pool(100)
-	for host in hostlist:
-		p.apply_async(mping, args=(host,rttlist))
+		p.kill()
+		return(host,'time out')
+
+def load_proc(hostfile):
+	hostlist=[]
+	for host in hostfile:
+		hostlist.append(host.strip('\n'))
+	p=Pool(500)	
+	res=p.map(mping, hostlist)
 	p.close()
 	p.join()
+	return res
 
 def write_data(rttlist):
 	conn=sqlite3.connect(DB_PATH)
@@ -34,10 +35,10 @@ def write_data(rttlist):
 	conn.close()
 
 def main():
-	with open(HOSTLIST_PATH,'r') as hostlist:
-		load_proc(hostlist,RTTLIST)
-		print(RTTLIST)
-		# write_data(rttlist)
+
+	with open(HOSTLIST_PATH,'r') as hostfile:
+		rttlist=load_proc(hostfile)
+		write_data(rttlist)
 
 if __name__ == '__main__':
 	main()
