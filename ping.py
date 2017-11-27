@@ -12,14 +12,14 @@ POOL_SIZE = 500
 def mping(host):
 	cmd=("ping -c 3 -i 0.1 -q " +host).split(" ")
 	p = subprocess.Popen(cmd,stdout = subprocess.PIPE,stderr = subprocess.PIPE)
-	time.sleep(2)								#停止2秒，等待程序运行
+	time.sleep(2)	#停止2秒，等待程序运行
 	if p.poll() == 0:
 		#获取3次ping结果的平均值
 		rtt = p.stdout.readlines()[-1].strip().split('/')[-3]			
 		return(host,rtt)
 	else:
 		p.kill()
-		rtt=99999								#运行2秒后如没有结果则直接Kill进程，返回'time out'
+		rtt=99999	#运行2秒后如没有结果则直接Kill进程，返回'time out'
 		return(host,rtt)
 
 #多进程并发
@@ -27,7 +27,7 @@ def load_proc(hostfile):
 	hostlist = []
 	for host in hostfile:
 		hostlist.append(host.strip('\n'))
-	p = Pool(POOL_SIZE)							#并发运行POOL_SIZE个进程，可根据硬件平台调整值大小
+	p = Pool(POOL_SIZE)	#并发运行POOL_SIZE个进程，可根据硬件平台调整值大小
 	res = p.map(mping, hostlist)
 	p.close()
 	p.join()
